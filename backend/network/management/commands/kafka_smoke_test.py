@@ -48,6 +48,12 @@ class Command(BaseCommand):
 
             # If we reach here, transaction committed and on_commit hook fired
             self.stdout.write(self.style.SUCCESS(f"Successfully published event {event.event_id} to {KafkaTopics.NODE_EVENTS}"))
+            
+            # CRITICAL: Flush producer to ensure message leaves local buffer before script exits
+            from events.producer import producer
+            producer.flush()
+            self.stdout.write("Producer flushed.")
+            
             self.stdout.write(f"Check Kafdrop or Audit Log for event_id: {event.event_id}")
 
         except Exception as e:

@@ -110,8 +110,13 @@ class AuditConsumer:
         self.consumer.subscribe(topics)
         logger.info(f"Audit Consumer started. Subscribed to: {topics}")
 
+        last_log = time.time()
         try:
             while self.running:
+                if time.time() - last_log > 5:
+                    logger.info("Audit Consumer is alive and polling...")
+                    last_log = time.time()
+                
                 msg = self.consumer.poll(timeout=1.0)
                 if msg is None:
                     continue

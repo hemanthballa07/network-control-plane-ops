@@ -44,7 +44,7 @@ class Producer:
         if err is not None:
             logger.error(f"Message delivery failed: {err}")
         else:
-            logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+            logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}] @ offset {msg.offset()}")
 
     def publish(self, topic: str, event: BaseEvent):
         """
