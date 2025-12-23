@@ -91,3 +91,27 @@ def provision_node_task(self, workflow_run_id):
         
         # Retry logic for transient errors could go here
         # self.retry(exc=e, countdown=10)
+
+@shared_task
+def check_stale_nodes_task():
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    threshold = timezone.now() - timedelta(minutes=1)
+    
+    stale_nodes = Node.objects.filter(
+        last_heartbeat_at__lt=threshold,
+        status__in=[Node.Status.HEALTHY, Node.Status.DEGRADED, Node.Status.PROVISIONING]
+    )
+    
+    for node in stale_nodes:
+        old_status = node.status
+        node.status = Node.Status.UNREACHABLE
+        node.save()
+        
+        EventLog.objects.create(
+            node=node,
+            event_type=EventLog.EventType.WARN,
+            message=f"Node marked UNREACHABLE (Last heartbeat: {node.last_heartbeat_at})",
+            correlation_id=uuid.uuid4()
+        )
