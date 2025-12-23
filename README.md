@@ -37,28 +37,37 @@ This project acts as the central nervous system for a distributed network (satel
 
 ### Prerequisites
 - Docker & Docker Compose
+- Node.js (for frontend)
 
 ### Quick Start
-1. **Start the stack**:
+1. **Start the backend stack**:
    ```bash
    make up
    ```
-2. **Access the API**:
-   Open [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/) for Swagger UI.
-3. **Run Tests**:
+2. **Start the frontend**:
    ```bash
-   make test
+   cd frontend
+   npm install
+   npm run dev
    ```
+3. **Access the App**:
+   - Frontend: [http://localhost:5173](http://localhost:5173)
+   - API Docs: [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
 
 ## Design Decisions
 
-- **Django + DRF**: Chosen for robust ORM and rapid API development capabilities suited for complex domain models.
+- **Django + DRF**: Chosen for rapid iteration on complex data models.
 - **Celery**: Handles long-running provisioning tasks that would time out a synchronous HTTP request.
-- **Event Sourcing (Lite)**: An `EventLog` append-only stream is used alongside current state to allow debugging of *why* a node is in a specific state.
-- **Correlation IDs**: Every request and background task carries a `correlation_id` to trace operations across the stack.
+- **Event Sourcing (Lite)**: An `EventLog` append-only stream serves as an audit trail.
+- **Correlation IDs**: Distributed tracing simplified; every task and log shares a request ID.
+- **Stale Node Detection**: A periodic background task (Celery Beat) assumes a node is UNREACHABLE if it misses heartbeats, simulating real-world NMS logic.
 
-## Future Work
+## Resume Points
 
-- [ ] Real-time WebSocket updates for topology changes.
-- [ ] Integration with AWS SQS for production queues.
-- [ ] RBAC for different operator levels.
+**Network Control Plane & Ops Dashboard (Django, Postgres, React, Celery, Docker)**
+
+* Designed and implemented a control-plane backend to manage network nodes, topology links, and configuration workflows using Django/DRF and PostgreSQL.
+* Built operator-facing UI for provisioning, monitoring health, and troubleshooting via workflow history and audit event streams.
+* Implemented async long-running workflows (Celery) with idempotency and retry handling to model reliable infrastructure operations.
+* Added heartbeat-based health tracking and automated stale-node detection, improving operational visibility and incident response.
+* Containerized services with Docker Compose and added API + task tests to prevent regressions.

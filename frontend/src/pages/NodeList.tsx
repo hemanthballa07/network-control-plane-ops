@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Activity, RefreshCw } from 'lucide-react';
 import { getNodes } from '../api/client';
-import { Node } from '../types';
+import type { Node } from '../types';
 
 const NodeList: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -84,7 +84,7 @@ const NodeList: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-medium text-slate-200">{node.name}</div>
-                      <div className="text-xs text-slate-500 font-mono">{node.ip || 'No IP'}</div>
+                      <div className="text-xs text-slate-500 font-mono">{node.mgmt_ip || 'No IP'}</div>
                     </div>
                   </div>
                 </td>

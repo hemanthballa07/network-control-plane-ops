@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Terminal, Activity, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Play, Terminal, Activity, Clock, CheckCircle } from 'lucide-react';
 import { getNode, provisionNode } from '../api/client';
-import { Node, WorkflowRun, EventLog } from '../types';
+import type { Node, WorkflowRun, EventLog } from '../types';
 
 const NodeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

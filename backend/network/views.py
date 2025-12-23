@@ -93,3 +93,25 @@ class TopologyViewSet(viewsets.ViewSet):
             'nodes': node_serializer.data,
             'links': link_serializer.data
         })
+
+class MetricsViewSet(viewsets.ViewSet):
+    """
+    Simple metrics endpoint.
+    """
+    @extend_schema(responses={200: 'OpenApiTypes.OBJECT'})
+    def list(self, request):
+        from django.db.models import Count
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        total_nodes = Node.objects.all().count()
+        nodes_by_status = dict(Node.objects.values_list('status').annotate(count=Count('status')))
+        
+        last_24h = timezone.now() - timedelta(hours=24)
+        workflow_stats = WorkflowRun.objects.filter(created_at__gte=last_24h).values('state').annotate(count=Count('state'))
+        
+        return Response({
+            'total_nodes': total_nodes,
+            'nodes_by_status': nodes_by_status,
+            'workflow_stats_24h': list(workflow_stats)
+        })

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getTopology } from '../api/client';
-import { TopologyData } from '../types';
+import type { TopologyData } from '../types';
 import { RefreshCw, Share2 } from 'lucide-react';
 
 // A simple manual visualization for now, can be upgraded to D3/Mermaid later
