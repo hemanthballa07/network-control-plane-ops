@@ -36,11 +36,11 @@ This project uses **Apache Kafka** as a central nervous system for lifecycle eve
 *   **Reliability**: Using Kafka's durability guarantees ensures critical control-plane history is never lost compared to ephemeral logs.
 
 ### Reliability Guarantees
-We implement "Strict Delivery" guarantees suitable for financial or critical infra systems:
+We implement "At-least-once delivery" guarantees suitable for financial or critical infra systems:
 1.  **Strict Producer**:
     *   `acks=all`: Ensure data is replicated to all ISRs before success.
     *   `enable.idempotence=true`: Prevent duplicate messages on network retries.
-    *   **Transactional Outbox (Simplified)**: We use `transaction.on_commit` hooks to ensure events are *only* published if the DB transaction commits successfully.
+    *   **Post-commit publish**: We use `transaction.on_commit` hooks to ensure events are *only* published if the DB transaction commits successfully.
 2.  **Idempotent Consumer**:
     *   **Manual Offsets**: We trigger `commit()` ONLY after the event is successfully written to the DB.
     *   **Idempotency Key**: The `AuditConsumer` checks `EventLog.objects.filter(event_id=...)` to prevent duplicate processing during re-drives.
@@ -55,15 +55,23 @@ We implement "Strict Delivery" guarantees suitable for financial or critical inf
 
 This project is currently in a **Demonstration State** with the following characteristics:
 
-1.  **Mock Data Active**: The frontend is currently using a mock API client (`src/api/client.ts`) because the backend was unreachable during the last session.
-    *   **To Restore Real Backend**: Revert `src/api/client.ts` to use `axios` directly without the mock fallback, and ensure the Django backend is running (`python manage.py runserver`).
-2.  **Backend Status**: The Docker environment for the backend needs to be started. Ensure Docker Desktop is running and run `docker-compose up`.
+1.  **Real Backend Active**: The frontend connects to the running Django backend.
+    *   **Mock Disabled**: The development mock layer (`src/api/client.ts`) has been disabled to prove end-to-end connectivity.
+2.  **Backend Status**: The Docker environment for the backend needs to be started. Ensure Docker Desktop is running and run `make up`.
 
-### key TODOs for Next Session
-- [ ] Fix Docker daemon issues to allow backend to start.
-- [ ] Connect Frontend to Real Backend by removing the mock layer in `client.ts`.
-- [ ] Implement real logic for the "Settings" page (currently UI only).
-- [ ] Add unit tests for the new React components.
+### Demo Script (60 Seconds)
+
+1.  **Start System**: `make up` (wait for health checks).
+2.  **Create Node**: Go to Dashboard -> "New Node" -> Create "GS-DEMO-01".
+3.  **Verify Kafka**:
+    *   Run `python manage.py kafka_smoke_test --event-type=NODE_CREATED`
+    *   Check Kafdrop (`http://localhost:9000`) -> Topic: `controlplane.node.events`.
+4.  **Verify Audit**:
+    *   Check "Audit Logs" in UI or query DB: `EventLog.objects.count()`.
+5.  **Reliability**:
+    *   Kill Consumer (`docker stop infra-backend-1`).
+    *   Run Smoke Test.
+    *   Start Consumer -> Verify event is processed (At-least-once).
 
 **A control-plane backend to manage network nodes, topology links, and configuration workflows.**
 
@@ -80,19 +88,22 @@ This project acts as the central nervous system for a distributed network (satel
        +---> [ Celery Workers ] <---> [ Redis (Broker) ]
                    |
                    +---> [ Node Provisioning / Config ]
+       +---> [ Kafka Producer ] ---> [ Kafka Cluster ]
+                   |
+                   +---> [ Audit Consumer ] ---> [ EventLog (DB) ]
 ```
 
 ## User Interface
 
-![Node List](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/node_list_mock_final_1766518628519.png)
+![Node List](docs/images/node_list.png)
 
 *Figure 1: Node List Dashboard (showing live status of Ground Stations and Satellites)*
 
-![Topology](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/topology_mock_final_1766518690749.png)
+![Topology](docs/images/topology.png)
 
 *Figure 2: Network Topology View (Visualizing links and node groups)*
 
-![Settings](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/settings_page_1766518848083.png)
+![Settings](docs/images/settings.png)
 
 *Figure 3: System Settings & Operator Config*
 
