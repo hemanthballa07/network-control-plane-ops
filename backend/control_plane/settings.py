@@ -123,3 +123,13 @@ CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# Celery Beat
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'check-stale-nodes': {
+        'task': 'network.tasks.check_stale_nodes_task',
+        'schedule': 60.0, # Run every 60 seconds
+    },
+}

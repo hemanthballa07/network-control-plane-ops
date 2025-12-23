@@ -19,9 +19,26 @@ class NodeViewSet(viewsets.ModelViewSet):
         Receive heartbeat from a node.
         Updates last_heartbeat_at and status.
         """
+        from django.utils import timezone
+        
         node = self.get_object()
-        # Logic to be implemented in Phase 6
-        return Response({'status': 'heartbeat received'})
+        
+        # Update heartbeat
+        node.last_heartbeat_at = timezone.now()
+        
+        # If node was UNREACHABLE/ERROR, mark it HEALTHY
+        # (simplified logic, real world might vary)
+        if node.status in [Node.Status.UNREACHABLE, Node.Status.ERROR]:
+            node.status = Node.Status.HEALTHY
+            EventLog.objects.create(
+                node=node,
+                event_type=EventLog.EventType.HEARTBEAT,
+                message=f"Node recovered. Status: {node.status}"
+            )
+        
+        node.save()
+        
+        return Response({'status': 'heartbeat received', 'current_status': node.status})
 
     @action(detail=True, methods=['post'])
     def provision(self, request, pk=None):
