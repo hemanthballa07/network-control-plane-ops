@@ -29,8 +29,32 @@ class NodeViewSet(viewsets.ModelViewSet):
         Trigger provisioning workflow.
         """
         node = self.get_object()
-        # Logic to be implemented in Phase 5
-        return Response({'status': 'provisioning started'}, status=status.HTTP_202_ACCEPTED)
+        
+        # Check for existing running workflow (Idempotency)
+        existing_run = WorkflowRun.objects.filter(
+            node=node,
+            workflow_type=WorkflowRun.WorkflowType.PROVISION,
+            state__in=[WorkflowRun.State.QUEUED, WorkflowRun.State.RUNNING]
+        ).first()
+
+        if existing_run:
+            serializer = WorkflowRunSerializer(existing_run)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Create new WorkflowRun
+        run = WorkflowRun.objects.create(
+            node=node,
+            workflow_type=WorkflowRun.WorkflowType.PROVISION,
+            requested_by=request.user.username or 'anonymous',
+            state=WorkflowRun.State.QUEUED
+        )
+
+        # Trigger Celery Task
+        from .tasks import provision_node_task
+        provision_node_task.delay(run.id)
+
+        serializer = WorkflowRunSerializer(run)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
