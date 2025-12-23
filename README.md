@@ -26,6 +26,45 @@
 >
 > This project is designed to resemble **production-grade network and infrastructure management software**, emphasizing correctness, observability, and operator usability.
 
+## 🧠 Event-Driven Architecture (Kafka Backbone)
+
+This project uses **Apache Kafka** as a central nervous system for lifecycle events, ensuring auditability and decoupling writes from downstream processing.
+
+### Why Kafka?
+*   **Immutable History**: Unlike Celery (which is for "tasks"), Kafka provides a replayable log of "what happened" (`NODE_CREATED`, `PROVISION_FAILED`). This allows us to rebuild the Audit Log or generate metrics from the beginning of time.
+*   **Decoupling**: The API write path (Django) only needs to emit an event. multiple downstream consumers (Audit, Metrics, Notifications) can react independently without slowing down the user.
+*   **Reliability**: Using Kafka's durability guarantees ensures critical control-plane history is never lost compared to ephemeral logs.
+
+### Reliability Guarantees
+We implement "Strict Delivery" guarantees suitable for financial or critical infra systems:
+1.  **Strict Producer**:
+    *   `acks=all`: Ensure data is replicated to all ISRs before success.
+    *   `enable.idempotence=true`: Prevent duplicate messages on network retries.
+    *   **Transactional Outbox (Simplified)**: We use `transaction.on_commit` hooks to ensure events are *only* published if the DB transaction commits successfully.
+2.  **Idempotent Consumer**:
+    *   **Manual Offsets**: We trigger `commit()` ONLY after the event is successfully written to the DB.
+    *   **Idempotency Key**: The `AuditConsumer` checks `EventLog.objects.filter(event_id=...)` to prevent duplicate processing during re-drives.
+3.  **Dead Letter Queue (DLQ)**:
+    *   If a message fails to process (e.g., bad JSON, DB constraint), it is published to a `dlq` topic with full error metadata (traceback, timestamp) before the offset is committed. This prevents "poison pills" from blocking the pipeline.
+
+### Known Limitations (Trade-offs)
+*   **Dual-Write Edge Case**: We use `on_commit` hooks. If the process crashes *after* DB commit but *before* Kafka publish, the event is lost. A full "Transactional Outbox" pattern (DB Table -> Debezium -> Kafka) would solve this but was deemed over-engineering for this stage.
+*   **Single Broker Dev**: Local docker uses a single Kafka broker with `replication-factor=1`. Production would use 3+ brokers with `min.insync.replicas=2`.
+
+## 🔜 Resuming Work & Next Steps
+
+This project is currently in a **Demonstration State** with the following characteristics:
+
+1.  **Mock Data Active**: The frontend is currently using a mock API client (`src/api/client.ts`) because the backend was unreachable during the last session.
+    *   **To Restore Real Backend**: Revert `src/api/client.ts` to use `axios` directly without the mock fallback, and ensure the Django backend is running (`python manage.py runserver`).
+2.  **Backend Status**: The Docker environment for the backend needs to be started. Ensure Docker Desktop is running and run `docker-compose up`.
+
+### key TODOs for Next Session
+- [ ] Fix Docker daemon issues to allow backend to start.
+- [ ] Connect Frontend to Real Backend by removing the mock layer in `client.ts`.
+- [ ] Implement real logic for the "Settings" page (currently UI only).
+- [ ] Add unit tests for the new React components.
+
 **A control-plane backend to manage network nodes, topology links, and configuration workflows.**
 
 This project acts as the central nervous system for a distributed network (satellites, ground stations, routers). It allows operators to provision nodes, visualize topology, and execute long-running maintenance workflows with full auditability.
@@ -45,13 +84,17 @@ This project acts as the central nervous system for a distributed network (satel
 
 ## User Interface
 
-![Node List](file:///Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/node_list_1766449001851.png)
+![Node List](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/node_list_mock_final_1766518628519.png)
 
-*Figure 1: Node List Dashboard (showing empty state initialized structure)*
+*Figure 1: Node List Dashboard (showing live status of Ground Stations and Satellites)*
 
-![Topology](file:///Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/topology_1766449022152.png)
+![Topology](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/topology_mock_final_1766518690749.png)
 
-*Figure 2: Network Topology View*
+*Figure 2: Network Topology View (Visualizing links and node groups)*
+
+![Settings](/Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/settings_page_1766518848083.png)
+
+*Figure 3: System Settings & Operator Config*
 
 ## Features
 

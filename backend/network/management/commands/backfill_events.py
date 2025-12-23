@@ -17,9 +17,10 @@ class Command(BaseCommand):
         self.stdout.write(f"Found {count} nodes to backfill...")
 
         success = 0
-        with transaction.atomic():
-            for node in nodes:
-                try:
+        for node in nodes:
+            try:
+                # Per-node transaction to ensure short lock times and immediate event publishing (via on_commit)
+                with transaction.atomic():
                     # Construct Synthetic Event
                     # Use Node.created_at as the event timestamp
                     event_ts = node.created_at if node.created_at else timezone.now()
@@ -45,9 +46,11 @@ class Command(BaseCommand):
                     # Publish
                     # We use standard publish_event which hooks into the transaction
                     publish_event(KafkaTopics.NODE_EVENTS, event)
-                    success += 1
-                    
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f"Failed to backfill node {node.id}: {e}"))
+                
+                # Success increment outside transaction
+                success += 1
+                
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Failed to backfill node {node.id}: {e}"))
 
         self.stdout.write(self.style.SUCCESS(f"Successfully queued backfill events for {success}/{count} nodes."))
