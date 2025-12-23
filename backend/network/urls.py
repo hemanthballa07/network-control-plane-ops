@@ -1,5 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import NodeViewSet, LinkViewSet, TopologyViewSet
+
+router = DefaultRouter()
+router.register(r'nodes', NodeViewSet)
+router.register(r'links', LinkViewSet)
+router.register(r'topology', TopologyViewSet, basename='topology')
 
 urlpatterns = [
-    # Endpoints will go here
+    path('', include(router.urls)),
 ]
