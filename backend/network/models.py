@@ -103,17 +103,28 @@ class EventLog(models.Model):
         HEARTBEAT = 'HEARTBEAT', 'Heartbeat'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Generic Linkage (Kafka Style)
+    event_id = models.UUIDField(unique=True, null=True, help_text="Idempotency key from Kafka")
+    entity_id = models.CharField(max_length=255, null=True, blank=True, help_text="Partition key / Object ID")
+    entity_type = models.CharField(max_length=50, null=True, blank=True)
+    
+    # Legacy/Direct FKs (Optional/Nullable now)
     node = models.ForeignKey(Node, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
     workflow_run = models.ForeignKey(WorkflowRun, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
     
-    event_type = models.CharField(max_length=20, choices=EventType.choices, default=EventType.INFO)
-    message = models.TextField()
-    correlation_id = models.UUIDField(null=True, blank=True)
+    event_type = models.CharField(max_length=50, choices=EventType.choices, default=EventType.INFO)
+    message = models.TextField(blank=True, help_text="Human readable summary")
+    payload = models.JSONField(default=dict, blank=True, help_text="Full event body")
     
+    correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event_id']),
+            models.Index(fields=['entity_id']),
+        ]
 
     def __str__(self):
-        return f"{self.event_type}: {self.message[:50]}"
+        return f"[{self.event_type}] {self.entity_type}:{self.entity_id} - {self.message[:50]}"
