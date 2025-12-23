@@ -1,5 +1,31 @@
 # Network Control Plane & Operations Dashboard
 
+> ### Project Complete ✅
+>
+> The **Network Control Plane & Operations Dashboard** is now complete and fully verified.
+>
+> **Key Capabilities**
+>
+> * Backend control plane built with **Django + DRF**, backed by **PostgreSQL**, fully containerized with **Docker Compose**.
+> * Core domain models for **Nodes, Topology Links, WorkflowRuns, and EventLogs**, modeling real infrastructure state and operations.
+> * REST APIs supporting full CRUD, topology views, and operational metrics.
+> * **Async infrastructure workflows** implemented with **Celery + Redis**, including node provisioning and automated stale-node detection.
+> * **Operator-facing UI** built in **React + TypeScript**, featuring a dark-mode dashboard for node management and topology visibility.
+> * **Observability features** including correlation IDs, structured logging, and system metrics.
+>
+> **Verification**
+>
+> * Full backend test suite passing (API, workflows, and state transitions).
+> * Frontend linting and validation completed.
+> * End-to-end walkthrough documented in `walkthrough.md`.
+>
+> **Running Locally**
+>
+> * Backend: `make up` (Postgres, Redis, Django on `:8000`)
+> * Frontend: `cd frontend && npm run dev` (UI on `:5173`)
+>
+> This project is designed to resemble **production-grade network and infrastructure management software**, emphasizing correctness, observability, and operator usability.
+
 **A control-plane backend to manage network nodes, topology links, and configuration workflows.**
 
 This project acts as the central nervous system for a distributed network (satellites, ground stations, routers). It allows operators to provision nodes, visualize topology, and execute long-running maintenance workflows with full auditability.
@@ -16,6 +42,16 @@ This project acts as the central nervous system for a distributed network (satel
                    |
                    +---> [ Node Provisioning / Config ]
 ```
+
+## User Interface
+
+![Node List](file:///Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/node_list_1766449001851.png)
+
+*Figure 1: Node List Dashboard (showing empty state initialized structure)*
+
+![Topology](file:///Users/hemanthballa/.gemini/antigravity/brain/bf93af00-ad75-492e-a8bc-0932a0f71a99/topology_1766449022152.png)
+
+*Figure 2: Network Topology View*
 
 ## Features
 
