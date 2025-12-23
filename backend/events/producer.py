@@ -76,6 +76,36 @@ class Producer:
         # Hook into Django transaction
         transaction.on_commit(_do_publish)
 
+    def publish_immediate(self, topic: str, key: str, value: Dict[str, Any]):
+        """
+        Publishes immediately to Kafka (blocking/direct), bypassing Django transaction hooks.
+        Used for DLQ and non-transactional contexts.
+        """
+        p = self.producer
+        if not p:
+            logger.warning(f"Kafka Producer not available, skipping immediate publish to {topic}")
+            return
+
+        try:
+            # Ensure value is JSON serialized
+            if not isinstance(value, str):
+                payload = json.dumps(value, default=str)
+            else:
+                payload = value
+
+            p.produce(
+                topic,
+                key=key,
+                value=payload,
+                on_delivery=self._delivery_report
+            )
+            p.poll(0)
+            p.flush(timeout=1) # Ensure it goes out
+            logger.info(f"Immediately published to {topic} (Key: {key})")
+        except Exception as e:
+            logger.error(f"Failed to immediate-publish to {topic}: {e}")
+            raise # Re-raise because if DLQ fails, we shouldn't commit offset
+
     def flush(self, timeout=10):
         if self._producer:
             self._producer.flush(timeout)
