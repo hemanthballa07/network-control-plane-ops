@@ -30,3 +30,7 @@ export const getNode = async (id: string) => {
 export const provisionNode = async (id: string) => {
   return await client.post(`/nodes/${id}/provision/`);
 };
+
+export const createNode = async (data: Partial<Node>) => {
+  return await client.post<Node>('/nodes/', data);
+};
