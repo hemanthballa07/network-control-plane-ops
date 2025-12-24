@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Activity, RefreshCw } from 'lucide-react';
 import { getNodes } from '../api/client';
 import type { Node } from '../types';
+import RegisterNodeModal from '../components/RegisterNodeModal';
 
 const NodeList: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetchNodes();
@@ -47,12 +49,21 @@ const NodeList: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
+      <RegisterNodeModal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        onSuccess={fetchNodes} 
+      />
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2 tracking-tight">Network Nodes</h1>
           <p className="text-slate-400">Manage satellites, ground stations, and routers.</p>
         </div>
-        <button className="btn btn-primary flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-white font-medium shadow-xl shadow-blue-900/20">
+        <button 
+          onClick={() => setShowModal(true)}
+          className="btn btn-primary flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-white font-medium shadow-xl shadow-blue-900/20 active:scale-95 transition-transform"
+        >
           <Plus size={18} /> Register Node
         </button>
       </div>
